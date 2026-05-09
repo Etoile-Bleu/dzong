@@ -80,13 +80,16 @@ impl Iterator for MergeIterator {
     fn next(&mut self) -> Option<Self::Item> {
         // Pop the one with the smallest key and largest LSN
         let mut top = self.heap.pop()?;
-        let result = top.next.take().expect("Heap should only contain items with Some(next)");
+        let result = top
+            .next
+            .take()
+            .expect("Heap should only contain items with Some(next)");
 
         // Peek to see if we have duplicates (same key)
         while let Some(peek) = self.heap.peek() {
             if let Some(peek_rec) = &peek.next {
                 if peek_rec.key == result.key {
-                    // Duplicate key found. Since we resolved by LSN in the heap, 
+                    // Duplicate key found. Since we resolved by LSN in the heap,
                     // the current 'result' is already the newest one.
                     // We just need to advance the other iterators that have the same key.
                     let mut other = self.heap.pop().unwrap();

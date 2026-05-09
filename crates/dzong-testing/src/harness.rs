@@ -1,9 +1,9 @@
-use dzong_core::{DzongEngine, Options};
 use dzong_common::{Key, Result, Value};
-use tempfile::TempDir;
-use std::collections::BTreeMap;
+use dzong_core::{DzongEngine, Options};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
+use std::collections::BTreeMap;
+use tempfile::TempDir;
 
 pub struct TestHarness {
     pub engine: DzongEngine,
@@ -17,7 +17,7 @@ impl TestHarness {
         let dir = TempDir::new()?;
         let options = Options::new(dir.path());
         let engine = DzongEngine::open(options.clone())?;
-        
+
         Ok(Self {
             engine,
             data_dir: dir,
@@ -30,7 +30,7 @@ impl TestHarness {
         let dir = TempDir::new()?;
         options.data_dir = dir.path().to_path_buf();
         let engine = DzongEngine::open(options.clone())?;
-        
+
         Ok(Self {
             engine,
             data_dir: dir,

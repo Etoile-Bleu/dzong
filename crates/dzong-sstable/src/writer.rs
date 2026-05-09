@@ -1,7 +1,7 @@
 use crate::block::BlockBuilder;
+use crate::footer::Footer;
 use crate::index::{Index, IndexEntry};
 use crate::record::{SstableOp, SstableRecord};
-use crate::footer::Footer;
 use dzong_common::{Key, Result, Value};
 use std::collections::BTreeMap;
 use std::fs::File;
@@ -33,7 +33,11 @@ impl SstableWriter {
 
         for (key, value) in memtable {
             let record = SstableRecord {
-                op: if value.is_some() { SstableOp::Put } else { SstableOp::Delete },
+                op: if value.is_some() {
+                    SstableOp::Put
+                } else {
+                    SstableOp::Delete
+                },
                 lsn: 0, // Placeholder for v1
                 key: key.clone(),
                 value: value.clone(),
@@ -47,12 +51,12 @@ impl SstableWriter {
 
     pub fn add(&mut self, record: &SstableRecord) -> Result<()> {
         let mut builder = self.current_builder.take().unwrap();
-        
+
         if builder.size() >= BLOCK_SIZE_THRESHOLD {
             self.finish_block(builder)?;
             builder = BlockBuilder::new();
         }
-        
+
         builder.add(record)?;
         self.current_builder = Some(builder);
         Ok(())
@@ -69,17 +73,17 @@ impl SstableWriter {
     }
 
     fn finish_block(&mut self, builder: BlockBuilder) -> Result<()> {
-        let first_key = builder.first_key().ok_or_else(|| {
-            dzong_common::DzongError::Invariant {
+        let first_key = builder
+            .first_key()
+            .ok_or_else(|| dzong_common::DzongError::Invariant {
                 message: "Attempted to finish an empty block".to_string(),
                 context: None,
-            }
-        })?;
+            })?;
         let data = builder.build();
         let size = data.len() as u32;
-        
+
         self.writer.write_all(&data)?;
-        
+
         self.index.add(IndexEntry {
             first_key,
             offset: self.offset,

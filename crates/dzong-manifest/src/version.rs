@@ -28,6 +28,12 @@ impl Version {
     }
 }
 
+impl Default for Version {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub struct VersionSet {
     current: Arc<Version>,
     next_file_id: u64,
@@ -62,5 +68,11 @@ impl VersionSet {
             let new_version = self.current.apply(&edit);
             self.current = Arc::new(new_version);
         }
+    }
+}
+
+impl Default for VersionSet {
+    fn default() -> Self {
+        Self::new()
     }
 }

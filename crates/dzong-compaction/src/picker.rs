@@ -19,11 +19,8 @@ impl CompactionPicker {
     pub fn pick_compaction(&self, version: &Version) -> Option<CompactionJob> {
         // Check L0
         if version.levels[0].len() >= self.l0_threshold {
-            let input_files = version.levels[0]
-                .iter()
-                .map(|f| f.path.clone())
-                .collect();
-            
+            let input_files = version.levels[0].iter().map(|f| f.path.clone()).collect();
+
             return Some(CompactionJob {
                 from_level: 0,
                 to_level: 1,
