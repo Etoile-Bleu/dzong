@@ -1,0 +1,15 @@
+[package]
+name = "dzong-sstable"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Static Sorted Table implementation for Dzong."
+
+[dependencies]
+dzong-common = { workspace = true }
+dzong-storage = { workspace = true }
+dzong-bloom = { workspace = true }
+thiserror.workspace = true
+tracing.workspace = true
+bytes.workspace = true

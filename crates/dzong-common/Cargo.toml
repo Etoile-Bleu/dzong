@@ -1,0 +1,12 @@
+[package]
+name = "dzong-common"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Common utilities and error types for Dzong."
+
+[dependencies]
+thiserror.workspace = true
+tracing.workspace = true
+serde.workspace = true

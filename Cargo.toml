@@ -1,0 +1,43 @@
+[workspace]
+resolver = "2"
+
+members = [
+    "crates/dzong-common",
+    "crates/dzong-core",
+    "crates/dzong-storage",
+    "crates/dzong-wal",
+    "crates/dzong-sstable",
+    "crates/dzong-bloom",
+    "crates/dzong-cli",
+    "crates/dzong-testing",
+]
+
+[workspace.package]
+version = "0.1.0"
+authors = ["Dzong Maintainers"]
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/dzong-db/dzong"
+homepage = "https://github.com/dzong-db/dzong"
+description = "A pure Rust embedded key-value database engine based on an LSM-Tree."
+
+[workspace.dependencies]
+# Common dependencies
+thiserror = "1.0"
+anyhow = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1.0", features = ["full"] }
+bytes = "1.0"
+parking_lot = "0.12"
+crossbeam = "0.8"
+
+# Internal dependencies
+dzong-common = { path = "crates/dzong-common" }
+dzong-core = { path = "crates/dzong-core" }
+dzong-storage = { path = "crates/dzong-storage" }
+dzong-wal = { path = "crates/dzong-wal" }
+dzong-sstable = { path = "crates/dzong-sstable" }
+dzong-bloom = { path = "crates/dzong-bloom" }
+dzong-testing = { path = "crates/dzong-testing" }

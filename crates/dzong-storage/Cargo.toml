@@ -1,0 +1,13 @@
+[package]
+name = "dzong-storage"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Storage abstractions and implementations for Dzong."
+
+[dependencies]
+dzong-common = { workspace = true }
+thiserror.workspace = true
+tracing.workspace = true
+async-trait = "0.1"

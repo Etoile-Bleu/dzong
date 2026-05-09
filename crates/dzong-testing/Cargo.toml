@@ -1,0 +1,18 @@
+[package]
+name = "dzong-testing"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Benchmarking and integration testing helpers for Dzong."
+
+[dependencies]
+dzong-core = { workspace = true }
+dzong-common = { workspace = true }
+criterion = "0.5"
+rand = "0.8"
+tempfile = "3.3"
+
+[[bench]]
+name = "storage_bench"
+harness = false

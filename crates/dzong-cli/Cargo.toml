@@ -1,0 +1,16 @@
+[package]
+name = "dzong-cli"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "CLI interface for interacting with Dzong."
+
+[dependencies]
+dzong-core = { workspace = true }
+dzong-common = { workspace = true }
+clap = { version = "4.0", features = ["derive"] }
+tracing.workspace = true
+tracing-subscriber.workspace = true
+tokio = { workspace = true, features = ["full"] }
+anyhow.workspace = true
