@@ -5,6 +5,8 @@ use std::path::PathBuf;
 pub struct Options {
     /// Path to the data directory.
     pub data_dir: PathBuf,
+    pub max_memtable_size: usize,
+    pub l0_compaction_threshold: usize,
 }
 
 impl Options {
@@ -12,6 +14,8 @@ impl Options {
     pub fn new(data_dir: impl Into<PathBuf>) -> Self {
         Self {
             data_dir: data_dir.into(),
+            max_memtable_size: 1000,
+            l0_compaction_threshold: 4,
         }
     }
 }

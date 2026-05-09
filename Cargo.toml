@@ -9,7 +9,7 @@ members = [
     "crates/dzong-sstable",
     "crates/dzong-bloom",
     "crates/dzong-cli",
-    "crates/dzong-testing",
+    "crates/dzong-testing", "crates/dzong-manifest", "crates/dzong-compaction",
 ]
 
 [workspace.package]
@@ -29,7 +29,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1.0", features = ["full"] }
-bytes = "1.0"
+bytes = { version = "1.0", features = ["serde"] }
 parking_lot = "0.12"
 crossbeam = "0.8"
 
@@ -39,5 +39,7 @@ dzong-core = { path = "crates/dzong-core" }
 dzong-storage = { path = "crates/dzong-storage" }
 dzong-wal = { path = "crates/dzong-wal" }
 dzong-sstable = { path = "crates/dzong-sstable" }
+dzong-manifest = { path = "crates/dzong-manifest" }
+dzong-compaction = { path = "crates/dzong-compaction" }
 dzong-bloom = { path = "crates/dzong-bloom" }
 dzong-testing = { path = "crates/dzong-testing" }
