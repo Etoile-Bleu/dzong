@@ -10,3 +10,4 @@ description = "Common utilities and error types for Dzong."
 thiserror.workspace = true
 tracing.workspace = true
 serde.workspace = true
+bytes.workspace = true
