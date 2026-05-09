@@ -5,7 +5,7 @@ pub mod reader;
 pub mod record;
 pub mod writer;
 
-pub use reader::SstableReader;
+pub use reader::{SstableIterator, SstableReader};
 pub use record::{SstableOp, SstableRecord};
 pub use writer::SstableWriter;
 
@@ -22,6 +22,9 @@ impl Sstable {
 
     pub fn get(path: &Path, key: &Key) -> Result<Option<Value>> {
         let mut reader = SstableReader::open(path)?;
-        reader.get(key)
+        match reader.get(key)? {
+            Some(record) if record.op == SstableOp::Put => Ok(record.value),
+            _ => Ok(None),
+        }
     }
 }

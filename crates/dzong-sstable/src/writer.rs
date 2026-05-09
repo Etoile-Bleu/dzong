@@ -14,6 +14,7 @@ pub struct SstableWriter {
     writer: BufWriter<File>,
     index: Index,
     offset: u64,
+    current_builder: Option<BlockBuilder>,
 }
 
 impl SstableWriter {
@@ -23,12 +24,12 @@ impl SstableWriter {
             writer: BufWriter::new(file),
             index: Index::new(),
             offset: 0,
+            current_builder: Some(BlockBuilder::new()),
         })
     }
 
     pub fn write_from_memtable(path: &Path, memtable: &BTreeMap<Key, Option<Value>>) -> Result<()> {
         let mut writer = Self::new(path)?;
-        let mut builder = BlockBuilder::new();
 
         for (key, value) in memtable {
             let record = SstableRecord {
@@ -37,19 +38,33 @@ impl SstableWriter {
                 key: key.clone(),
                 value: value.clone(),
             };
+            writer.add(&record)?;
+        }
 
-            if builder.size() >= BLOCK_SIZE_THRESHOLD {
-                writer.finish_block(builder)?;
-                builder = BlockBuilder::new();
+        writer.finish()?;
+        Ok(())
+    }
+
+    pub fn add(&mut self, record: &SstableRecord) -> Result<()> {
+        let mut builder = self.current_builder.take().unwrap();
+        
+        if builder.size() >= BLOCK_SIZE_THRESHOLD {
+            self.finish_block(builder)?;
+            builder = BlockBuilder::new();
+        }
+        
+        builder.add(record)?;
+        self.current_builder = Some(builder);
+        Ok(())
+    }
+
+    pub fn finish(&mut self) -> Result<()> {
+        if let Some(builder) = self.current_builder.take() {
+            if !builder.is_empty() {
+                self.finish_block(builder)?;
             }
-            builder.add(&record)?;
         }
-
-        if !builder.is_empty() {
-            writer.finish_block(builder)?;
-        }
-
-        writer.write_index_and_footer()?;
+        self.write_index_and_footer()?;
         Ok(())
     }
 

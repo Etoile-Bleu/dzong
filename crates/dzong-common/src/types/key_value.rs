@@ -2,7 +2,7 @@ use bytes::Bytes;
 use std::ops::Deref;
 
 /// A lightweight, zero-cost abstraction for database keys.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize)]
 pub struct Key(Bytes);
 
 impl Key {
@@ -32,7 +32,7 @@ impl From<Vec<u8>> for Key {
 }
 
 /// A lightweight, zero-cost abstraction for database values.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub struct Value(Bytes);
 
 impl Value {

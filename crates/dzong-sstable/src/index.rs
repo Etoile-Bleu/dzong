@@ -48,7 +48,7 @@ impl IndexEntry {
 }
 
 /// The SSTable index containing entries for all blocks.
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Index {
     pub entries: Vec<IndexEntry>,
 }

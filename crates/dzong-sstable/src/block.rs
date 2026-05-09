@@ -59,17 +59,13 @@ impl<'a> BlockReader<'a> {
         Self { data }
     }
 
-    /// Scans the block for a specific key.
-    /// Returns the record with the highest LSN if found.
     pub fn get(&self, key: &Key) -> Result<Option<SstableRecord>> {
-        let mut cursor = Cursor::new(self.data);
         let mut best_record: Option<SstableRecord> = None;
+        let iter = BlockIterator::new(self.data);
 
-        while cursor.position() < self.data.len() as u64 {
-            let record = SstableRecord::decode(&mut cursor)?;
+        for result in iter {
+            let record = result?;
             if &record.key == key {
-                // In a single block from a MemTable, there should be only one version.
-                // But for future-proofing, we check LSN.
                 match &best_record {
                     None => best_record = Some(record),
                     Some(best) if record.lsn > best.lsn => best_record = Some(record),
@@ -79,5 +75,34 @@ impl<'a> BlockReader<'a> {
         }
 
         Ok(best_record)
+    }
+
+    pub fn iter(&self) -> BlockIterator<'a> {
+        BlockIterator::new(self.data)
+    }
+}
+
+pub struct BlockIterator<'a> {
+    cursor: Cursor<&'a [u8]>,
+    data_len: u64,
+}
+
+impl<'a> BlockIterator<'a> {
+    pub fn new(data: &'a [u8]) -> Self {
+        Self {
+            cursor: Cursor::new(data),
+            data_len: data.len() as u64,
+        }
+    }
+}
+
+impl<'a> Iterator for BlockIterator<'a> {
+    type Item = Result<SstableRecord>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.cursor.position() >= self.data_len {
+            return None;
+        }
+        Some(SstableRecord::decode(&mut self.cursor))
     }
 }

@@ -29,6 +29,19 @@ impl MemTable {
     pub fn get(&self, key: &Key) -> Option<Value> {
         self.map.get(key).and_then(|v| v.clone())
     }
+
+    /// Finds the entry for the key, returning Some(&None) if it's a tombstone.
+    pub fn find(&self, key: &Key) -> Option<&Option<Value>> {
+        self.map.get(key)
+    }
+
+    pub fn count(&self) -> usize {
+        self.map.len()
+    }
+
+    pub fn iter(&self) -> std::collections::btree_map::Iter<'_, Key, Option<Value>> {
+        self.map.iter()
+    }
 }
 
 #[cfg(test)]

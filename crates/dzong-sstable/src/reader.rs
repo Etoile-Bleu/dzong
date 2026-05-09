@@ -1,8 +1,8 @@
 use crate::block::BlockReader;
 use crate::footer::Footer;
 use crate::index::{Index, IndexEntry};
-use crate::record::SstableOp;
-use dzong_common::{Key, Result, Value};
+use crate::record::SstableRecord;
+use dzong_common::{Key, Result};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;
@@ -53,11 +53,12 @@ impl SstableReader {
         while cursor.position() < index_bytes_to_read {
             index.add(IndexEntry::decode(&mut cursor)?);
         }
+        println!("DEBUG: Opened SSTable with {} index entries", index.entries.len());
 
         Ok(Self { file, index })
     }
 
-    pub fn get(&mut self, key: &Key) -> Result<Option<Value>> {
+    pub fn get(&mut self, key: &Key) -> Result<Option<SstableRecord>> {
         let entry = match self.index.find_block(key) {
             Some(e) => e,
             None => return Ok(None),
@@ -70,11 +71,71 @@ impl SstableReader {
 
         // Scan block
         let block_reader = BlockReader::new(&block_data);
-        let record = block_reader.get(key)?;
+        block_reader.get(key)
+    }
 
-        match record {
-            Some(r) if r.op == SstableOp::Put => Ok(r.value),
-            _ => Ok(None), // Delete or not found
+    pub fn scan(&self) -> Result<SstableIterator> {
+        let file = self.file.try_clone()?;
+        Ok(SstableIterator::new(file, self.index.clone()))
+    }
+}
+
+pub struct SstableIterator {
+    file: File,
+    index: Index,
+    current_block_idx: usize,
+    current_block_data: Vec<u8>,
+    current_block_pos: usize,
+}
+
+impl SstableIterator {
+    pub fn new(file: File, index: Index) -> Self {
+        Self {
+            file,
+            index,
+            current_block_idx: 0,
+            current_block_data: Vec::new(),
+            current_block_pos: 0,
+        }
+    }
+
+    fn load_next_block(&mut self) -> Result<bool> {
+        if self.current_block_idx >= self.index.entries.len() {
+            return Ok(false);
+        }
+
+        let entry = &self.index.entries[self.current_block_idx];
+        self.file.seek(SeekFrom::Start(entry.offset))?;
+        self.current_block_data = vec![0u8; entry.block_size as usize];
+        self.file.read_exact(&mut self.current_block_data)?;
+
+        self.current_block_pos = 0;
+        self.current_block_idx += 1;
+        Ok(true)
+    }
+}
+
+impl Iterator for SstableIterator {
+    type Item = Result<SstableRecord>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            if self.current_block_pos < self.current_block_data.len() {
+                let mut cursor = std::io::Cursor::new(&self.current_block_data[self.current_block_pos..]);
+                match SstableRecord::decode(&mut cursor) {
+                    Ok(rec) => {
+                        self.current_block_pos += cursor.position() as usize;
+                        return Some(Ok(rec));
+                    }
+                    Err(e) => return Some(Err(e)),
+                }
+            }
+
+            match self.load_next_block() {
+                Ok(true) => continue,
+                Ok(false) => return None,
+                Err(e) => return Some(Err(e)),
+            }
         }
     }
 }

@@ -9,6 +9,9 @@ description = "Core engine logic for Dzong (MemTable, Compaction, Engine)."
 [dependencies]
 dzong-common = { workspace = true }
 dzong-wal = { workspace = true }
+dzong-sstable = { workspace = true }
+dzong-manifest = { workspace = true }
+dzong-compaction = { workspace = true }
 thiserror.workspace = true
 tracing.workspace = true
 

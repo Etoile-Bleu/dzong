@@ -18,6 +18,14 @@ impl WalWriter {
         })
     }
 
+    /// Opens a WAL file and truncates it.
+    pub fn open_truncate(path: impl AsRef<Path>) -> Result<Self> {
+        let file = File::create(path)?;
+        Ok(Self {
+            writer: BufWriter::new(file),
+        })
+    }
+
     /// Appends a record to the WAL.
     /// Note: This does not guarantee durability until `flush` is called.
     pub fn append(&mut self, record: &WalRecord) -> Result<()> {
