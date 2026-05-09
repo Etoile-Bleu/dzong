@@ -157,22 +157,20 @@ The WAL provides:
 # WAL Record Layout
 
 ```text
-+-----------+------------+-------------+---------+
-| Checksum  | Key Length | Value Length| Payload |
-+-----------+------------+-------------+---------+
++----------+----------+----------+------------+--------------+---------+
+| Checksum | Op (u8)  | LSN (u64)| Key Length | Value Length | Payload |
++----------+----------+----------+------------+--------------+---------+
 ```
 
 Payload:
 
 ```text
-[key bytes][value bytes]
+[key bytes][value bytes (optional)]
 ```
 
-Future versions may support:
-
-* compression
-* batching
-* record fragmentation
+### Operation Types
+- **Put (0)**: Standard write/update.
+- **Delete (1)**: Tombstone marking key for deletion.
 
 ---
 
@@ -195,13 +193,15 @@ This property simplifies:
 
 ```text
 +-------------------+
-| Data Blocks       |
+| Data Block 0      |
++-------------------+
+| ...               |
++-------------------+
+| Data Block N      |
 +-------------------+
 | Block Index       |
 +-------------------+
 | Bloom Filter      |
-+-------------------+
-| Metadata Block    |
 +-------------------+
 | Footer            |
 +-------------------+
@@ -211,54 +211,34 @@ This property simplifies:
 
 ## Data Blocks
 
-Data blocks contain:
-
-* sorted key-value pairs
-* restart points
-* optional compression
+Data blocks contain sorted key-value pairs encoded as `SstableRecord`.
 
 Properties:
-
-* sequentially readable
-* binary searchable
-* cache-friendly
+* **Threshold-based**: New blocks are started when current block size exceeds 4KB (default).
+* **Self-contained**: Each record includes its operation type (Put/Delete) and LSN.
 
 ---
 
 ## Index Block
 
-The index maps:
+The index is a sparse registry of data blocks:
 
-* key ranges
-* block offsets
-* block sizes
+* **Key**: The first key of the block.
+* **Offset**: Byte position in the file.
+* **Size**: Length of the block.
 
-This enables logarithmic block lookup.
-
----
-
-## Bloom Filters
-
-Bloom filters reduce unnecessary disk reads.
-
-Properties:
-
-* probabilistic membership checks
-* configurable false-positive rate
-* no false negatives
-
-Bloom filters are checked before disk access.
+Lookup strategy: Binary search on index keys to find the candidate block, then sequential scan within the block.
 
 ---
 
 ## Footer
 
-The footer contains:
+The footer is a fixed-size (32 bytes) structure at the end of the file:
 
-* metadata offsets
-* format version
-* magic number
-* integrity validation
+* **Index Offset**: Offset where the index block starts.
+* **Index Size**: Length of the index block.
+* **Filter Offset**: (Future) Bloom filter location.
+* **Magic Number**: `0xDZ0NG001` for integrity verification.
 
 ---
 
@@ -420,27 +400,18 @@ Compaction must preserve:
 
 # Manifest
 
-The Manifest is the persistent metadata registry.
+The Manifest is a persistent append-only log of `VersionEdit` records. It acts as the "journal of state changes" for the database.
 
-It tracks:
+### Versioning Concepts
+- **Version**: A snapshot of all active SSTables across all levels at a specific point in time. Versions are immutable.
+- **VersionSet**: Manages the `current` Version and coordinates state transitions.
+- **VersionEdit**: A delta applied to a Version to produce the next one (e.g., `AddFile`, `RemoveFile`, `NextFileId`).
 
-* SSTable locations
-* level assignments
-* compaction state
-* sequence numbers
-
-The Manifest enables:
-
-* startup recovery
-* consistent database reconstruction
-
----
-
-# Manifest Guarantees
-
-* atomic updates
-* monotonic sequence progression
-* crash-safe recovery
+### Recovery Semantics
+Upon startup, the engine:
+1. Replays the Manifest log from start to finish.
+2. Accumulates `VersionEdit`s into the `VersionSet`.
+3. Reconstructs the `current` Version representing the latest database state.
 
 ---
 
