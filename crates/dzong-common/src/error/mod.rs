@@ -46,7 +46,7 @@ mod tests {
     #[test]
     fn test_io_propagation() {
         fn fail() -> Result<()> {
-            Err(io::Error::new(io::ErrorKind::Other, "disk failure").into())
+            Err(io::Error::other("disk failure").into())
         }
         let res = fail();
         assert!(matches!(res, Err(DzongError::Io(_))));

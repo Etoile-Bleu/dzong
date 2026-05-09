@@ -16,7 +16,7 @@ impl SstableReader {
     pub fn open(path: &Path) -> Result<Self> {
         let mut file = File::open(path)?;
         let file_size = file.metadata()?.len();
-        
+
         if file_size < Footer::SIZE as u64 {
             return Err(dzong_common::DzongError::Corruption {
                 message: "SSTable file too small for footer".to_string(),
@@ -48,12 +48,15 @@ impl SstableReader {
         // Let's just read the whole index into memory for now.
         let mut index_data = vec![0u8; index_bytes_to_read as usize];
         index_reader.read_exact(&mut index_data)?;
-        
+
         let mut cursor = std::io::Cursor::new(index_data);
         while cursor.position() < index_bytes_to_read {
             index.add(IndexEntry::decode(&mut cursor)?);
         }
-        println!("DEBUG: Opened SSTable with {} index entries", index.entries.len());
+        println!(
+            "DEBUG: Opened SSTable with {} index entries",
+            index.entries.len()
+        );
 
         Ok(Self { file, index })
     }
@@ -121,7 +124,8 @@ impl Iterator for SstableIterator {
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             if self.current_block_pos < self.current_block_data.len() {
-                let mut cursor = std::io::Cursor::new(&self.current_block_data[self.current_block_pos..]);
+                let mut cursor =
+                    std::io::Cursor::new(&self.current_block_data[self.current_block_pos..]);
                 match SstableRecord::decode(&mut cursor) {
                     Ok(rec) => {
                         self.current_block_pos += cursor.position() as usize;

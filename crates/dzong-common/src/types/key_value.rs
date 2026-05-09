@@ -2,7 +2,9 @@ use bytes::Bytes;
 use std::ops::Deref;
 
 /// A lightweight, zero-cost abstraction for database keys.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize,
+)]
 pub struct Key(Bytes);
 
 impl Key {

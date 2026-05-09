@@ -54,13 +54,12 @@ impl SstableRecord {
     pub fn decode<R: Read>(mut reader: R) -> Result<Self> {
         let mut op_buf = [0u8; 1];
         reader.read_exact(&mut op_buf)?;
-        let op = SstableOp::from_u8(op_buf[0]).ok_or_else(|| {
-            dzong_common::DzongError::Corruption {
+        let op =
+            SstableOp::from_u8(op_buf[0]).ok_or_else(|| dzong_common::DzongError::Corruption {
                 message: format!("Invalid SstableOp: {}", op_buf[0]),
                 file_id: None,
                 offset: None,
-            }
-        })?;
+            })?;
 
         let mut lsn_buf = [0u8; 8];
         reader.read_exact(&mut lsn_buf)?;

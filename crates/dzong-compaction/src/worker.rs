@@ -14,19 +14,26 @@ impl CompactionWorker {
         Self { base_path }
     }
 
-    pub fn run_compaction(&self, job: CompactionJob, version_set: &mut VersionSet) -> Result<VersionEdit> {
+    pub fn run_compaction(
+        &self,
+        job: CompactionJob,
+        version_set: &mut VersionSet,
+    ) -> Result<VersionEdit> {
         let mut readers = Vec::new();
         for path in &job.input_files {
             readers.push(SstableReader::open(path)?);
         }
 
-        let iters: Vec<_> = readers.iter().map(|r| Box::new(r.scan().unwrap()) as Box<dyn Iterator<Item = Result<_>>>).collect();
+        let iters: Vec<_> = readers
+            .iter()
+            .map(|r| Box::new(r.scan().unwrap()) as Box<dyn Iterator<Item = Result<_>>>)
+            .collect();
         let merger = MergeIterator::new(iters)?;
 
         // Output file
         let new_id = version_set.next_file_id();
         let output_path = self.base_path.join(format!("{:06}.sst", new_id));
-        
+
         let mut writer = SstableWriter::new(&output_path)?;
         let mut min_key = None;
         let mut max_key = None;
@@ -57,7 +64,7 @@ impl CompactionWorker {
         // For now, let's just return a Combined edit or a vec.
         // Actually, let's keep it simple: return the AddFile edit.
         // The VersionSet::apply_edit can handle complex edits if we want.
-        
+
         // Wait, I should probably return a Vec<VersionEdit>.
         Ok(VersionEdit::AddFile {
             level: job.to_level,

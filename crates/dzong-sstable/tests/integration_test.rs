@@ -33,8 +33,7 @@ fn test_sstable_with_tombstones() -> Result<()> {
     let mut memtable = BTreeMap::new();
 
     let k1 = Key::new(&b"key1"[..]);
-    let v1 = Value::new(&b"val1"[..]);
-    
+
     memtable.insert(k1.clone(), None); // Tombstone
 
     Sstable::write_from_memtable(&path, &memtable)?;
@@ -72,10 +71,10 @@ fn test_sstable_multi_block() -> Result<()> {
 fn test_sstable_corruption() -> Result<()> {
     let dir = tempdir()?;
     let path = dir.path().join("corrupt.sst");
-    
+
     // Write garbage
     std::fs::write(&path, b"garbage data that is not a valid sstable")?;
-    
+
     let result = Sstable::get(&path, &Key::new(&b"k"[..]));
     assert!(result.is_err());
 

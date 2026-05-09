@@ -6,8 +6,8 @@ use dzong_wal::{WalOp, WalReader, WalRecord, WalWriter};
 use std::fs;
 use tracing::{info, warn};
 
-use std::collections::HashMap;
 use std::cell::RefCell;
+use std::collections::HashMap;
 
 /// The central execution core of the Dzong database engine.
 pub struct DzongEngine {
@@ -63,7 +63,7 @@ impl DzongEngine {
         // Manifest Recovery
         let manifest_path = options.data_dir.join("MANIFEST-000001");
         let mut version_set = dzong_manifest::VersionSet::new();
-        
+
         if manifest_path.exists() {
             let mut reader = dzong_manifest::ManifestReader::open(manifest_path.clone())?;
             let edits = reader.read_all()?;
@@ -71,7 +71,7 @@ impl DzongEngine {
                 version_set.apply_edit(edit);
             }
         }
-        
+
         let manifest_writer = dzong_manifest::ManifestWriter::open(manifest_path)?;
 
         Ok(Self {
@@ -100,7 +100,7 @@ impl DzongEngine {
         self.wal.flush()?;
 
         self.memtable.put(key, value);
-        
+
         if self.memtable.count() >= self.options.max_memtable_size {
             self.flush_memtable()?;
         }
@@ -111,19 +111,23 @@ impl DzongEngine {
         info!("Flushing MemTable...");
         let new_id = self.version_set.next_file_id();
         let sst_path = self.options.data_dir.join(format!("{:06}.sst", new_id));
-        
+
         let mut writer = dzong_sstable::SstableWriter::new(&sst_path)?;
         let mut min_key = None;
         let mut max_key = None;
 
         for (key, val_opt) in self.memtable.iter() {
             let record = dzong_sstable::SstableRecord {
-                op: if val_opt.is_some() { dzong_sstable::SstableOp::Put } else { dzong_sstable::SstableOp::Delete },
+                op: if val_opt.is_some() {
+                    dzong_sstable::SstableOp::Put
+                } else {
+                    dzong_sstable::SstableOp::Delete
+                },
                 lsn: 0, // TODO: Use real LSN from MemTable if stored
                 key: key.clone(),
                 value: val_opt.clone(),
             };
-            
+
             if min_key.is_none() {
                 min_key = Some(key.clone());
             }
@@ -147,8 +151,9 @@ impl DzongEngine {
         self.version_set.apply_edit(edit);
 
         let next_id = self.version_set.next_file_id_value();
-        self.manifest_writer.append(&VersionEdit::NextFileId(next_id))?;
-        
+        self.manifest_writer
+            .append(&VersionEdit::NextFileId(next_id))?;
+
         // Reset MemTable and WAL
         self.memtable = MemTable::new();
         let wal_path = self.options.data_dir.join("wal.log");
@@ -163,13 +168,16 @@ impl DzongEngine {
     fn maybe_compact(&mut self) -> Result<()> {
         let picker = dzong_compaction::CompactionPicker::new(self.options.l0_compaction_threshold);
         if let Some(job) = picker.pick_compaction(&self.version_set.current()) {
-            info!("Starting compaction: L{} -> L{}", job.from_level, job.to_level);
+            info!(
+                "Starting compaction: L{} -> L{}",
+                job.from_level, job.to_level
+            );
             let worker = dzong_compaction::CompactionWorker::new(self.options.data_dir.clone());
             let edit = worker.run_compaction(job, &mut self.version_set)?;
-            
+
             self.manifest_writer.append(&edit)?;
             self.version_set.apply_edit(edit);
-            
+
             // TODO: Delete old files
         }
         Ok(())
@@ -188,10 +196,13 @@ impl DzongEngine {
             for file_meta in level.iter().rev() {
                 if key >= &file_meta.min_key && key <= &file_meta.max_key {
                     let mut cache = self.reader_cache.borrow_mut();
-                    if !cache.contains_key(&file_meta.id) {
-                        cache.insert(file_meta.id, dzong_sstable::SstableReader::open(&file_meta.path)?);
-                    }
-                    let reader = cache.get_mut(&file_meta.id).unwrap();
+                    use std::collections::hash_map::Entry;
+                    let reader = match cache.entry(file_meta.id) {
+                        Entry::Vacant(e) => {
+                            e.insert(dzong_sstable::SstableReader::open(&file_meta.path)?)
+                        }
+                        Entry::Occupied(e) => e.into_mut(),
+                    };
                     if let Some(record) = reader.get(key)? {
                         if record.op == dzong_sstable::SstableOp::Put {
                             return Ok(record.value);
